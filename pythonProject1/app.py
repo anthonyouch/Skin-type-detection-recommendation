@@ -204,29 +204,6 @@ def all_images():
         })
     return jsonify(image_list)
 
-@app.route('/user_info', methods=['GET'])
-@login_required
-def user_info():
-    user = users_collection.find_one({"username": current_user.username})
-    if user:
-        return jsonify({'username': user['username']})
-    return jsonify({'error': 'User not found'}), 404
-
-@app.route('/user_images', methods=['GET'])
-@login_required
-def user_images():
-    images = image_collection.find({"username": current_user.username})
-    image_list = []
-    for image in images:
-        image_list.append({
-            'file_id': str(image['file_id']),
-            'filename': image['filename'],
-            'skin_type': image['skin_type'],
-            'image_url': f"/uploads/{image['file_id']}"
-        })
-    return jsonify(image_list)
-
-
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5001)

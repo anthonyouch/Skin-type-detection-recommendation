@@ -26,26 +26,71 @@
         .content {
             padding: 20px;
         }
+        img {
+            max-width: 320px;
+            max-height: 240px;
+            margin: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="navbar">
-    <a href="/">Home</a>
-    <a href="/register">Register</a>
-    <a href="/login">Login</a>
-    <a href="/upload">Upload</a>
-    <a href="/profile">Profile</a>
-    <a href="/logout">Logout</a>
-</div>
-
+        <a href="/">Home</a>
+        <a href="/register">Register</a>
+        <a href="/login">Login</a>
+        <a href="/upload">Upload</a>
+        <a href="/profile">Profile</a>
+        <a href="/logout">Logout</a>
+    </div>
 
     <div class="content">
         <h1>Profile</h1>
         <p>Welcome, <span id="username"></span>!</p>
+        <h2>Your Uploaded Images</h2>
+        <div id="all-images"></div>
     </div>
 
     <script>
-        document.getElementById('username').innerText = 'current_user'; // Display the current user's username
+        async function fetchUserInfo() {
+            const response = await fetch('http://127.0.0.1:5001/user_info', {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const user = await response.json();
+                document.getElementById('username').innerText = user.username;
+            } else {
+                document.getElementById('username').innerText = 'Guest';
+            }
+        }
+
+        async function fetchUserImages() {
+            const response = await fetch('http://127.0.0.1:5001/user_images', {
+                method: 'GET',
+                credentials: 'include'
+            });
+
+            if (response.ok) {
+                const images = await response.json();
+                const allImagesDiv = document.getElementById('all-images');
+                allImagesDiv.innerHTML = '';  // Clear existing images
+                images.forEach(image => {
+                    const imageUrl = 'http://127.0.0.1:5001' + image.image_url;
+                    const imgElement = document.createElement('img');
+                    imgElement.src = imageUrl;
+                    imgElement.alt = image.filename;
+                    imgElement.title = 'Skin Type: ' + image.skin_type;
+                    allImagesDiv.appendChild(imgElement);
+                });
+            } else {
+                document.getElementById('all-images').innerHTML = 'Error fetching images: ' + response.statusText;
+            }
+        }
+
+        // Fetch user info and images when the page loads
+        fetchUserInfo();
+        fetchUserImages();
     </script>
 </body>
 </html>
