@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Skin Type Detection</title>
+    <style>
+        video {
+            width: 320px;
+            height: 240px;
+        }
+        canvas {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload or Capture an Image to Detect Skin Type</h1>
+
+    <!-- Section for webcam capture -->
+    <div>
+        <h2>Capture Photo from Webcam</h2>
+        <video id="video" autoplay></video>
+        <button id="capture">Capture Photo</button>
+    </div>
+
+    <!-- Section for file upload -->
+    <div>
+        <h2>Upload Photo</h2>
+        <form id="upload-form" enctype="multipart/form-data">
+            <input type="file" id="file-input" name="file" accept="image/*" required>
+            <button type="submit">Upload</button>
+        </form>
+    </div>
+
+    <canvas id="canvas"></canvas>
+    <div id="result"></div>
+
+    <script>
+        // Get access to the camera
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
+                var video = document.getElementById('video');
+                video.srcObject = stream;
+                video.play();
+            });
+        }
+
+        // Elements for taking the snapshot
+        var canvas = document.getElementById('canvas');
+        var context = canvas.getContext('2d');
+        var video = document.getElementById('video');
+
+        document.getElementById('capture').addEventListener('click', function() {
+            context.drawImage(video, 0, 0, 320, 240);
+            canvas.toBlob(function(blob) {
+                uploadImage(blob);
+            }, 'image/jpeg');
+        });
+
+        document.getElementById('upload-form').onsubmit = async function(event) {
+            event.preventDefault();
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput.files[0];
+            uploadImage(file);
+        };
+
+        async function uploadImage(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetch('http://127.0.0.1:5000/predict', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            let resultText = 'Detected Skin Type: ' + result.skin_type + '<br>Recommendations:<ul>';
+            result.recommendations.forEach(rec => {
+                resultText += '<li>' + rec + '</li>';
+            });
+            resultText += '</ul>';
+            document.getElementById('result').innerHTML = resultText;
+        }
+    </script>
+</body>
+</html>
