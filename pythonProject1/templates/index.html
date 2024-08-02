@@ -4,6 +4,25 @@
     <meta charset="UTF-8">
     <title>Skin Type Detection</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .navbar {
+            overflow: hidden;
+            background-color: #333;
+        }
+        .navbar a {
+            float: left;
+            display: block;
+            color: #f2f2f2;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+        }
+        .navbar a:hover {
+            background-color: #ddd;
+            color: black;
+        }
         video {
             width: 320px;
             height: 240px;
@@ -15,29 +34,40 @@
             max-width: 320px;
             max-height: 240px;
         }
+        .content {
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
-    <h1>Upload or Capture an Image to Detect Skin Type</h1>
-
-    <!-- Section for webcam capture -->
-    <div>
-        <h2>Capture Photo from Webcam</h2>
-        <video id="video" autoplay></video>
-        <button id="capture">Capture Photo</button>
+    <div class="navbar">
+        <a href="/">Home</a>
+        <a href="/register">Register</a>
+        <a href="/upload">Upload</a>
     </div>
 
-    <!-- Section for file upload -->
-    <div>
-        <h2>Upload Photo</h2>
-        <form id="upload-form" enctype="multipart/form-data">
-            <input type="file" id="file-input" name="file" accept="image/*" required>
-            <button type="submit">Upload</button>
-        </form>
-    </div>
+    <div class="content">
+        <h1>Upload or Capture an Image to Detect Skin Type</h1>
 
-    <canvas id="canvas"></canvas>
-    <div id="result"></div>
+        <!-- Section for webcam capture -->
+        <div>
+            <h2>Capture Photo from Webcam</h2>
+            <video id="video" autoplay></video>
+            <button id="capture">Capture Photo</button>
+        </div>
+
+        <!-- Section for file upload -->
+        <div>
+            <h2>Upload Photo</h2>
+            <form id="upload-form" enctype="multipart/form-data">
+                <input type="file" id="file-input" name="file" accept="image/*" required>
+                <button type="submit">Upload</button>
+            </form>
+        </div>
+
+        <canvas id="canvas"></canvas>
+        <div id="result"></div>
+    </div>
 
     <script>
         // Get access to the camera
@@ -72,7 +102,7 @@
             const formData = new FormData();
             formData.append('file', file);
 
-            const response = await fetch('http://127.0.0.1:5000/predict', {
+            const response = await fetch('http://127.0.0.1:5001/predict', {
                 method: 'POST',
                 body: formData
             });

@@ -4,6 +4,28 @@
     <meta charset="UTF-8">
     <title>Upload Photo</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .navbar {
+            overflow: hidden;
+            background-color: #333;
+        }
+        .navbar a {
+            float: left;
+            display: block;
+            color: #f2f2f2;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+        }
+        .navbar a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+        .content {
+            padding: 20px;
+        }
         img {
             max-width: 320px;
             max-height: 240px;
@@ -12,15 +34,23 @@
     </style>
 </head>
 <body>
-    <h1>Upload a Photo to Detect Skin Type</h1>
-    <form id="upload-form" enctype="multipart/form-data">
-        <input type="file" id="file-input" name="file" accept="image/*" required>
-        <button type="submit">Upload</button>
-    </form>
-    <div id="result"></div>
-    <div id="uploaded-image"></div>
-    <h2>All Uploaded Images</h2>
-    <div id="all-images"></div>
+    <div class="navbar">
+        <a href="/">Home</a>
+        <a href="/register">Register</a>
+        <a href="/upload">Upload</a>
+    </div>
+
+    <div class="content">
+        <h1>Upload a Photo to Detect Skin Type</h1>
+        <form id="upload-form" enctype="multipart/form-data">
+            <input type="file" id="file-input" name="file" accept="image/*" required>
+            <button type="submit">Upload</button>
+        </form>
+        <div id="result"></div>
+        <div id="uploaded-image"></div>
+        <h2>All Uploaded Images</h2>
+        <div id="all-images"></div>
+    </div>
 
     <script>
         document.getElementById('upload-form').onsubmit = async function(event) {
@@ -35,7 +65,7 @@
             const formData = new FormData();
             formData.append('file', file);
 
-            const response = await fetch('http://127.0.0.1:5000/predict', {
+            const response = await fetch('http://127.0.0.1:5001/predict', {
                 method: 'POST',
                 body: formData
             });
@@ -47,9 +77,8 @@
                     resultText += '<li>' + rec + '</li>';
                 });
                 resultText += '</ul>';
+                const imageUrl = 'http://127.0.0.1:5001' + result.image_url;
                 document.getElementById('result').innerHTML = resultText;
-
-                const imageUrl = 'http://127.0.0.1:5000' + result.image_url;
                 document.getElementById('uploaded-image').innerHTML = '<img src="' + imageUrl + '" alt="Uploaded Image">';
             } else {
                 document.getElementById('result').innerHTML = 'Error: ' + response.statusText;
@@ -57,7 +86,7 @@
         }
 
         async function fetchAllImages() {
-            const response = await fetch('http://127.0.0.1:5000/all_images', {
+            const response = await fetch('http://127.0.0.1:5001/all_images', {
                 method: 'GET'
             });
 
@@ -66,7 +95,7 @@
                 const allImagesDiv = document.getElementById('all-images');
                 allImagesDiv.innerHTML = '';  // Clear existing images
                 images.forEach(image => {
-                    const imageUrl = 'http://127.0.0.1:5000' + image.image_url;
+                    const imageUrl = 'http://127.0.0.1:5001' + image.image_url;
                     const imgElement = document.createElement('img');
                     imgElement.src = imageUrl;
                     imgElement.alt = image.filename;

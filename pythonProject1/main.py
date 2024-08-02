@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, send_from_directory
 from flask_cors import CORS
 from transformers import AutoModelForImageClassification, AutoFeatureExtractor
 import torch
@@ -10,11 +10,10 @@ from bson import ObjectId
 import logging
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for the entire app
+CORS(app)
 
-# MongoDB setup - replace with your actual MongoDB Atlas connection string
-client = MongoClient(
-    'mongodb+srv://anthonyouchprogrammer:skincare123@cluster0.2wl7pco.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
+# MongoDB setup
+client = MongoClient('mongodb+srv://anthonyouchprogrammer:skincare123@cluster0.2wl7pco.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
 db = client['skin_type_db']
 fs = gridfs.GridFS(db)
 image_collection = db['images']
@@ -53,11 +52,21 @@ recommendations = {
     ]
 }
 
-
 def preprocess_image(image):
     inputs = feature_extractor(images=image, return_tensors="pt")
     return inputs
 
+@app.route('/')
+def home():
+    return send_from_directory('templates', 'index.html')
+
+@app.route('/register')
+def register_page():
+    return send_from_directory('templates', 'register.html')
+
+@app.route('/upload')
+def upload_page():
+    return send_from_directory('templates', 'upload.html')
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -89,9 +98,7 @@ def predict():
 
     logging.info(f"Stored file with ID: {file_id}")
 
-    return jsonify(
-        {'skin_type': skin_type, 'recommendations': skincare_recommendations, 'image_url': f"/uploads/{file_id}"})
-
+    return jsonify({'skin_type': skin_type, 'recommendations': skincare_recommendations, 'image_url': f"/uploads/{file_id}"})
 
 @app.route('/uploads/<file_id>')
 def uploaded_file(file_id):
@@ -102,7 +109,6 @@ def uploaded_file(file_id):
     except Exception as e:
         logging.error(f"Error fetching file: {str(e)}")
         return jsonify({"error": str(e)}), 400
-
 
 @app.route('/all_images', methods=['GET'])
 def all_images():
@@ -117,7 +123,6 @@ def all_images():
         })
     return jsonify(image_list)
 
-
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
