@@ -57,7 +57,7 @@ def add_post():
             'user_id': user_id
         }
         posts_collection.insert_one(post)
-        return redirect(url_for('index'))
+        return redirect(url_for('comm_index'))
     except Exception as e:
         logging.error(f"Error adding post: {e}")
         return "Error adding post", 500
@@ -82,7 +82,7 @@ def add_comment():
             return "Comments collection not found", 500
 
         comments_collection.insert_one(comment)
-        return redirect(url_for('index'))
+        return redirect(url_for('comm_index'))
     except Exception as e:
         logging.error(f"Error adding comment: {e}")
         return "Error adding comment", 500
