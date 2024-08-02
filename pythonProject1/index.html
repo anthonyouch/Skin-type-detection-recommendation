@@ -11,6 +11,10 @@
         canvas {
             display: none;
         }
+        img {
+            max-width: 320px;
+            max-height: 240px;
+        }
     </style>
 </head>
 <body>
@@ -72,13 +76,19 @@
                 method: 'POST',
                 body: formData
             });
-            const result = await response.json();
-            let resultText = 'Detected Skin Type: ' + result.skin_type + '<br>Recommendations:<ul>';
-            result.recommendations.forEach(rec => {
-                resultText += '<li>' + rec + '</li>';
-            });
-            resultText += '</ul>';
-            document.getElementById('result').innerHTML = resultText;
+
+            if (response.ok) {
+                const result = await response.json();
+                let resultText = 'Detected Skin Type: ' + result.skin_type + '<br>Recommendations:<ul>';
+                result.recommendations.forEach(rec => {
+                    resultText += '<li>' + rec + '</li>';
+                });
+                resultText += '</ul>';
+                resultText += '<img src="' + result.image_url + '" alt="Uploaded Image">';
+                document.getElementById('result').innerHTML = resultText;
+            } else {
+                document.getElementById('result').innerHTML = 'Error: ' + response.statusText;
+            }
         }
     </script>
 </body>
