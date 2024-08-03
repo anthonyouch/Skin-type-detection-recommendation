@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Posts</title>
+    <style>
+        .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Posts</h1>
+    <form action="{{ url_for('search') }}" method="get">
+        <input type="text" name="keyword" placeholder="Search..." required>
+        <button type="submit">Search</button>
+    </form>
+    <hr>
+    <form action="{{ url_for('add_post') }}" method="post">
+        <input type="text" name="image_url" placeholder="Image URL" required>
+        <input type="text" name="description" placeholder="Description" required>
+        <input type="text" name="user_id" placeholder="User ID" required>
+        <button type="submit">Add Post</button>
+    </form>
+    <hr>
+    {% for post in posts %}
+        <div>
+            <img src="{{ post.avatar_url }}" alt="User Avatar" class="avatar">
+            <img src="{{ post.image_url }}" alt="Post Image" style="max-width: 200px;">
+            <p>{{ post.description }}</p>
+            <p><strong>Posted by User:</strong> {{ post.user_id }}</p>
+            <p><strong>MBTI:</strong> {{ post.mbti }}</p>
+            <form action="{{ url_for('add_comment') }}" method="post">
+                <input type="hidden" name="post_id" value="{{ post._id }}">
+                <input type="text" name="comment" placeholder="Comment" required>
+                <input type="text" name="user_id" placeholder="User ID" required>
+                <button type="submit">Add Comment</button>
+            </form>
+            <div>
+                <h4>Comments:</h4>
+                <div id="comments-{{ post._id }}">
+                    {% for comment in post.comments %}
+                        <div>
+                            <img src="{{ comment.avatar_url }}" alt="User Avatar" class="avatar">
+                            <p>{{ comment.comment }}</p>
+                            <p><strong>Commented by User:</strong> {{ comment.user_id }}</p>
+                            <p><strong>MBTI:</strong> {{ comment.mbti }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <hr>
+    {% endfor %}
+</body>
+</html>

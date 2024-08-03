@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Search Results</title>
+    <style>
+        .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+        }
+        .go-back-button {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Search Results for "{{ keyword }}"</h1>
+
+    <!-- Go Back Button -->
+    <a class="go-back-button" href="{{ url_for('index') }}">&#8592; Go Back</a>
+
+    <form action="{{ url_for('search') }}" method="get">
+        <input type="text" name="keyword" placeholder="Search..." required>
+        <button type="submit">Search</button>
+    </form>
+    <hr>
+    {% if posts %}
+        {% for post in posts %}
+            <div>
+                <img src="{{ post.avatar_url }}" alt="User Avatar" class="avatar">
+                <img src="{{ post.image_url }}" alt="Post Image" style="max-width: 200px;">
+                <p>{{ post.description }}</p>
+                <p><strong>Posted by User:</strong> {{ post.user_id }}</p>
+                <p><strong>MBTI:</strong> {{ post.mbti }}</p>
+                <div>
+                    <h4>Comments:</h4>
+                    <div id="comments-{{ post._id }}">
+                        {% for comment in post.comments %}
+                            <div>
+                                <img src="{{ comment.avatar_url }}" alt="User Avatar" class="avatar">
+                                <p>{{ comment.comment }}</p>
+                                <p><strong>Commented by User:</strong> {{ comment.user_id }}</p>
+                                <p><strong>MBTI:</strong> {{ comment.mbti }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <hr>
+        {% endfor %}
+    {% else %}
+        <p>No results found for "{{ keyword }}"</p>
+    {% endif %}
+</body>
+</html>

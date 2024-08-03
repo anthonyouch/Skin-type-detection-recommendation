@@ -1,0 +1,8 @@
+<!-- Profile page form -->
+<form action="/add_comment" method="POST">
+    <!-- Hidden fields for post_id and user_id -->
+    <input type="hidden" name="post_id" value="{{ post_id }}"> <!-- Replace with actual post_id -->
+    <input type="hidden" name="user_id" value="{{ user_id }}"> <!-- Replace with actual user_id -->
+    <textarea name="comment" required></textarea>
+    <button type="submit">Add Comment</button>
+</form>

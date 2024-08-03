@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Post</title>
+</head>
+<body>
+    <h1>Add New Post</h1>
+    <form method="POST">
+        <label for="image_url">Image URL:</label>
+        <input type="text" id="image_url" name="image_url" required>
+        <br>
+        <label for="description">Description:</label>
+        <input type="text" id="description" name="description">
+        <br>
+        <button type="submit">Submit Post</button>
+    </form>
+
+    <a href="{{ url_for('index') }}">Back to Home</a>
+</body>
+</html>
