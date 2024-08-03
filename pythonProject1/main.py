@@ -14,6 +14,8 @@ import io
 import os
 from werkzeug.utils import secure_filename
 from datetime import datetime
+import certifi
+import json
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -25,7 +27,10 @@ login_manager.login_view = 'login_page'
 
 # MongoDB setup
 try:
-    client = MongoClient('mongodb+srv://anthonyouchprogrammer:skincare123@cluster0.2wl7pco.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
+    client = MongoClient(
+        'mongodb+srv://anthonyouchprogrammer:skincare123@cluster0.2wl7pco.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
+        tlsCAFile=certifi.where())
+    # client = MongoClient('mongodb+srv://anthonyouchprogrammer:skincare123@cluster0.2wl7pco.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
     db = client['skin_type_db']
     users_collection = db['users']
     fs = gridfs.GridFS(db)
@@ -258,6 +263,7 @@ def allowed_file(filename):
 
 @app.route('/add_post', methods=['GET', 'POST'])
 def add_post():
+    print(request)
     if request.method == 'POST':
         try:
             if 'image_file' not in request.files:
@@ -373,6 +379,7 @@ def search():
 
 @app.route('/display_posts', methods=['GET', 'POST'])
 def display_posts():
+    print("get request!")
     try:
         keyword = request.args.get('keyword', '')
         if keyword:
@@ -385,9 +392,23 @@ def display_posts():
             post_comments = list(db[COMMENTS_COLLECTION].find({'post_id': post['_id']}))
             post['comments'] = post_comments
             post['timestamp'] = post.get('timestamp', datetime.now())
-            posts_list.append(post)
+            if 'mbti' not in post:
+                post['mbti'] = "DRPT"
+            post_return = {
+                "user_id": post['user_id'],
+                'create_time': str(post['timestamp']),
+                'post': {
+                    "content": post['description']
+                },
+                "skin_tag": post['mbti']
+            }
+            posts_list.append(post_return)
 
-        return render_template('display_posts.html', posts=posts_list, keyword=keyword)
+        print(posts_list)
+        return {
+        'statusCode': 200,
+        'body': json.dumps(posts_list)
+        }
     except Exception as e:
         logging.error(f"Error fetching posts: {e}")
         return "Error fetching posts", 500
