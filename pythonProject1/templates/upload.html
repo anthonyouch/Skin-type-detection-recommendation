@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Upload Photo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Posting Functionalities</title>
     <style>
         .navbar {
             overflow: hidden;
@@ -20,10 +21,10 @@
             background-color: #ddd;
             color: black;
         }
-        img {
-            max-width: 320px;
-            max-height: 240px;
-            margin: 10px;
+        .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
         }
     </style>
 </head>
@@ -36,74 +37,76 @@
         <a href="/profile">Profile</a>
         <a href="/logout">Logout</a>
     </div>
-    <h1>Upload a Photo to Detect Skin Type</h1>
-    <form id="upload-form" enctype="multipart/form-data">
-        <input type="file" id="file-input" name="file" accept="image/*" required>
-        <button type="submit">Upload</button>
+
+    <h1>Test Posting Functionalities</h1>
+
+    <!-- Add Post Form -->
+    <h2>Add New Post</h2>
+    <form action="{{ url_for('add_post') }}" method="post" enctype="multipart/form-data">
+        <label for="image_file">Select image:</label>
+        <input type="file" id="image_file" name="image_file" accept="image/*" required><br><br>
+
+        <label for="description">Description:</label>
+        <input type="text" id="description" name="description" required><br><br>
+
+        <label for="user_id">User ID:</label>
+        <input type="text" id="user_id" name="user_id" required><br><br>
+
+        <button type="submit">Add Post</button>
     </form>
-    <div id="result"></div>
-    <div id="uploaded-image"></div>
-    <h2>All Uploaded Images</h2>
-    <div id="all-images"></div>
 
-    <script>
-        document.getElementById('upload-form').onsubmit = async function(event) {
-            event.preventDefault();
-            const fileInput = document.getElementById('file-input');
-            const file = fileInput.files[0];
-            await uploadImage(file);
-            await fetchAllImages();
-        };
+    <hr>
 
-        async function uploadImage(file) {
-            const formData = new FormData();
-            formData.append('file', file);
+    <!-- Search Form -->
+    <h2>Search Posts</h2>
+    <form action="{{ url_for('search') }}" method="get">
+        <input type="text" name="keyword" placeholder="Search..." required>
+        <button type="submit">Search</button>
+    </form>
+    <hr>
 
-            const response = await fetch('http://127.0.0.1:5001/predict', {
-                method: 'POST',
-                body: formData
-            });
+    <!-- Display Posts and Add Comment Form -->
+    <h2>All Posts</h2>
+    {% for post in posts %}
+        <div>
+            <img src="{{ post.avatar_url }}" alt="User Avatar" class="avatar">
+            <img src="{{ url_for('uploaded_file', filename=post.image_url) }}" alt="Post Image" style="max-width: 200px;">
+            <p>{{ post.description }}</p>
+            <p><strong>Posted by User:</strong> {{ post.user_id }}</p>
+            <p><strong>MBTI:</strong> {{ post.mbti }}</p>
 
-            if (response.ok) {
-                const result = await response.json();
-                let resultText = 'Detected Skin Type: ' + result.skin_type + '<br>Recommendations:<ul>';
-                result.recommendations.forEach(rec => {
-                    resultText += '<li>' + rec + '</li>';
-                });
-                resultText += '</ul>';
-                document.getElementById('result').innerHTML = resultText;
+            <!-- Add Comment Form -->
+            <form action="{{ url_for('add_comment') }}" method="post">
+                <input type="hidden" name="post_id" value="{{ post._id }}">
+                <input type="text" name="comment" placeholder="Comment" required>
+                <input type="text" name="user_id" placeholder="User ID" required>
+                <button type="submit">Add Comment</button>
+            </form>
 
-                const imageUrl = 'http://127.0.0.1:5001' + result.image_url;
-                document.getElementById('uploaded-image').innerHTML = '<img src="' + imageUrl + '" alt="Uploaded Image">';
-            } else {
-                document.getElementById('result').innerHTML = 'Error: ' + response.statusText;
-            }
-        }
-
-        async function fetchAllImages() {
-            const response = await fetch('http://127.0.0.1:5001/all_images', {
-                method: 'GET'
-            });
-
-            if (response.ok) {
-                const images = await response.json();
-                const allImagesDiv = document.getElementById('all-images');
-                allImagesDiv.innerHTML = '';  // Clear existing images
-                images.forEach(image => {
-                    const imageUrl = 'http://127.0.0.1:5001' + image.image_url;
-                    const imgElement = document.createElement('img');
-                    imgElement.src = imageUrl;
-                    imgElement.alt = image.filename;
-                    imgElement.title = 'Skin Type: ' + image.skin_type;
-                    allImagesDiv.appendChild(imgElement);
-                });
-            } else {
-                document.getElementById('result').innerHTML = 'Error fetching images: ' + response.statusText;
-            }
-        }
-
-        // Fetch all images when the page loads
-        fetchAllImages();
-    </script>
+            <!-- Display Comments -->
+            <div>
+                <h4>Comments:</h4>
+                <div id="comments-{{ post._id }}"></div>
+            </div>
+            <script>
+                fetch('{{ url_for("get_comments", post_id=post._id) }}')
+                    .then(response => response.json())
+                    .then(comments => {
+                        const commentsContainer = document.getElementById('comments-{{ post._id }}');
+                        comments.forEach(comment => {
+                            const commentDiv = document.createElement('div');
+                            commentDiv.innerHTML = `
+                                <img src="${comment.avatar_url}" alt="User Avatar" class="avatar">
+                                <p>${comment.comment}</p>
+                                <p><strong>Commented by User:</strong> ${comment.user_id}</p>
+                                <p><strong>MBTI:</strong> ${comment.mbti}</p>
+                            `;
+                            commentsContainer.appendChild(commentDiv);
+                        });
+                    });
+            </script>
+        </div>
+        <hr>
+    {% endfor %}
 </body>
 </html>

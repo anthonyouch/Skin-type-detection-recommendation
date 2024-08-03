@@ -9,7 +9,11 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from transformers import AutoModelForImageClassification, AutoFeatureExtractor
 import torch
 from PIL import Image
+from flask_pymongo import PyMongo
 import io
+import os
+from werkzeug.utils import secure_filename
+from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
@@ -17,7 +21,7 @@ bcrypt = Bcrypt(app)
 CORS(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login_page'  # Add this line
+login_manager.login_view = 'login_page'
 
 # MongoDB setup
 try:
@@ -65,6 +69,7 @@ def login_page():
 @login_required
 def profile_page():
     return send_from_directory('templates', 'profile.html')
+
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -225,6 +230,168 @@ def user_images():
             'image_url': f"/uploads/{image['file_id']}"
         })
     return jsonify(image_list)
+
+"""EVERYTHING BELOW IS FOR COMMUNITY PAGE /display_posts ONLY"""
+
+# MongoDB configuration
+MONGO_URI = 'mongodb+srv://anthonyouchprogrammer:skincare123@cluster0.2wl7pco.mongodb.net/your_database_name?retryWrites=true&w=majority&appName=Cluster0'
+app.config["MONGO_URI"] = MONGO_URI
+
+# Initialize PyMongo
+mongo = PyMongo(app)
+
+# Collection names
+POSTS_COLLECTION = "posts"
+COMMENTS_COLLECTION = "comments"
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+
+# File upload configuration
+UPLOAD_FOLDER = 'static/uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/add_post', methods=['GET', 'POST'])
+def add_post():
+    if request.method == 'POST':
+        try:
+            if 'image_file' not in request.files:
+                logging.error("No file part in the request")
+                return "No file part", 400
+
+            file = request.files['image_file']
+            if file.filename == '':
+                logging.error("No selected file")
+                return "No selected file", 400
+
+            if file and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+
+                posts_collection = db[POSTS_COLLECTION]
+                description = request.form['description']
+                user_id = current_user.get_id()
+                mbti = request.form['mbti']
+                timestamp = datetime.now()
+
+                post = {
+                    'image_url': file_path,
+                    'description': description,
+                    'user_id': user_id,
+                    'mbti': mbti,
+                    'timestamp': timestamp
+                }
+                posts_collection.insert_one(post)
+                return redirect(url_for('display_posts'))
+            else:
+                logging.error("File not allowed")
+                return "File not allowed", 400
+        except Exception as e:
+            logging.error(f"Error adding post: {e}")
+            return "Error adding post", 500
+    return render_template('add_post.html')
+
+@app.route('/add_comment', methods=['POST'])
+def add_comment():
+    try:
+        post_id = request.form['post_id']
+        comment_text = request.form['comment']
+        user_id = request.form['user_id']
+        mbti = request.form['mbti']
+        timestamp = datetime.now()
+
+        comment = {
+            'post_id': ObjectId(post_id),
+            'comment': comment_text,
+            'user_id': user_id,
+            'mbti': mbti,
+            'timestamp': timestamp
+        }
+
+        comments_collection = db[COMMENTS_COLLECTION]
+        comments_collection.insert_one(comment)
+        return redirect(url_for('display_posts'))
+    except Exception as e:
+        logging.error(f"Error adding comment: {e}")
+        return "Error adding comment", 500
+
+@app.route('/get_comments/<post_id>')
+def get_comments(post_id):
+    try:
+        comments_collection = db[COMMENTS_COLLECTION]
+        comments = comments_collection.find({'post_id': ObjectId(post_id)})
+        comments_list = list(comments)
+
+        for comment in comments_list:
+            comment['_id'] = str(comment['_id'])
+            comment['post_id'] = str(comment['post_id'])
+            comment['time_stamp'] = comment.get('timestamp', datetime.now())
+
+        return jsonify(comments_list)
+    except Exception as e:
+        logging.error(f"Error fetching comments: {e}")
+        return "Error fetching comments", 500
+
+@app.route('/search', methods=['GET'])
+def search():
+    keyword = request.args.get('keyword', '')
+    try:
+        posts_collection = db.get_collection(POSTS_COLLECTION)
+        comments_collection = db.get_collection(COMMENTS_COLLECTION)
+
+        if posts_collection is None or comments_collection is None:
+            logging.error("Collections do not exist")
+            return "Collections not found", 500
+
+        # Search posts by keyword in mbti field
+        posts = posts_collection.find({'mbti': {'$regex': keyword, '$options': 'i'}})
+        posts_list = []
+
+        for post in posts:
+            post_comments = list(comments_collection.find({'post_id': post['_id']}))
+            post['comments'] = post_comments
+            post['timestamp'] = post.get('timestamp', datetime.now())
+            posts_list.append(post)
+
+        return render_template('display_posts.html', posts=posts_list, keyword=keyword)
+    except Exception as e:
+        logging.error(f"Error during search: {e}")
+        return "Error during search", 500
+
+
+        return render_template('display_posts.html', posts=posts_list, keyword=keyword)
+    except Exception as e:
+        logging.error(f"Error during search: {e}")
+        return "Error during search", 500
+
+
+@app.route('/display_posts', methods=['GET', 'POST'])
+def display_posts():
+    try:
+        keyword = request.args.get('keyword', '')
+        if keyword:
+            posts = db[POSTS_COLLECTION].find({'mbti': {'$regex': keyword, '$options': 'i'}})
+        else:
+            posts = db[POSTS_COLLECTION].find()
+
+        posts_list = []
+        for post in posts:
+            post_comments = list(db[COMMENTS_COLLECTION].find({'post_id': post['_id']}))
+            post['comments'] = post_comments
+            post['timestamp'] = post.get('timestamp', datetime.now())
+            posts_list.append(post)
+
+        return render_template('display_posts.html', posts=posts_list, keyword=keyword)
+    except Exception as e:
+        logging.error(f"Error fetching posts: {e}")
+        return "Error fetching posts", 500
+
 
 
 if __name__ == '__main__':
