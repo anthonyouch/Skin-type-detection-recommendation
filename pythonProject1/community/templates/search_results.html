@@ -2,55 +2,40 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Search Results</title>
-    <style>
-        .avatar {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-        }
-        .go-back-button {
-            margin-bottom: 20px;
-        }
-    </style>
 </head>
 <body>
     <h1>Search Results for "{{ keyword }}"</h1>
 
-    <!-- Go Back Button -->
-    <a class="go-back-button" href="{{ url_for('index') }}">&#8592; Go Back</a>
+    <a href="{{ url_for('index') }}">Go back to all posts</a>
 
-    <form action="{{ url_for('search') }}" method="get">
-        <input type="text" name="keyword" placeholder="Search..." required>
-        <button type="submit">Search</button>
-    </form>
-    <hr>
-    {% if posts %}
-        {% for post in posts %}
-            <div>
-                <img src="{{ post.avatar_url }}" alt="User Avatar" class="avatar">
-                <img src="{{ post.image_url }}" alt="Post Image" style="max-width: 200px;">
-                <p>{{ post.description }}</p>
-                <p><strong>Posted by User:</strong> {{ post.user_id }}</p>
-                <p><strong>MBTI:</strong> {{ post.mbti }}</p>
-                <div>
-                    <h4>Comments:</h4>
-                    <div id="comments-{{ post._id }}">
-                        {% for comment in post.comments %}
-                            <div>
-                                <img src="{{ comment.avatar_url }}" alt="User Avatar" class="avatar">
-                                <p>{{ comment.comment }}</p>
-                                <p><strong>Commented by User:</strong> {{ comment.user_id }}</p>
-                                <p><strong>MBTI:</strong> {{ comment.mbti }}</p>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-            <hr>
-        {% endfor %}
-    {% else %}
-        <p>No results found for "{{ keyword }}"</p>
-    {% endif %}
+    {% for post in posts %}
+        <div class="post">
+            <h2>{{ post.description }}</h2>
+            <!-- Correctly reference the uploaded image -->
+            <img src="{{ url_for('uploaded_file', filename=post.image_url) }}" alt="Post Image" style="width: 300px;">
+
+            <p>Image URL: {{ url_for('uploaded_file', filename=post.image_url) }}</p>
+
+
+            <h3>Comments:</h3>
+            <ul>
+                {% for comment in post.comments %}
+                    <li>
+                        <img src="{{ comment.avatar_url }}" alt="User Avatar" style="width: 50px;">
+                        <strong>User {{ comment.user_id }}:</strong> {{ comment.comment }}
+                    </li>
+                {% endfor %}
+            </ul>
+
+            <form action="{{ url_for('add_comment') }}" method="post">
+                <input type="hidden" name="post_id" value="{{ post._id }}">
+                <textarea name="comment" required></textarea>
+                <input type="hidden" name="user_id" value="your_user_id_here">
+                <button type="submit">Add Comment</button>
+            </form>
+        </div>
+    {% endfor %}
 </body>
 </html>

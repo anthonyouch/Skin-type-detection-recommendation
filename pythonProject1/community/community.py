@@ -1,7 +1,9 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for, jsonify, send_from_directory
 from flask_pymongo import PyMongo
 from bson import ObjectId
 import logging
+import os
+from werkzeug.utils import secure_filename
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -20,14 +22,14 @@ COMMENTS_COLLECTION = "comments"
 # Set up logging
 logging.basicConfig(level=logging.INFO)
 
-# Dummy function to get user MBTI (replace with actual implementation)
-def get_user_mbti(user_id):
-    return "DRNW"  # Placeholder MBTI type
+# File upload configuration
+UPLOAD_FOLDER = 'static/uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Dummy function to get user avatar URL (replace with actual implementation)
-def get_user_avatar(user_id):
-    # Return the URL of the placeholder image
-    return url_for('static', filename='user_icon.jpg')
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route('/')
 def index():
@@ -55,26 +57,42 @@ def index():
 @app.route('/add_post', methods=['POST'])
 def add_post():
     try:
-        posts_collection = mongo.db.get_collection(POSTS_COLLECTION)
-        if posts_collection is None:
-            logging.error("Posts collection does not exist")
-            return "Posts collection not found", 500
+        if 'image_file' not in request.files:
+            logging.error("No file part in the request")
+            return "No file part", 400
 
-        image_url = request.form['image_url']
-        description = request.form['description']
-        user_id = request.form['user_id']
-        mbti = get_user_mbti(user_id)
-        avatar_url = get_user_avatar(user_id)
+        file = request.files['image_file']
+        if file.filename == '':
+            logging.error("No selected file")
+            return "No selected file", 400
 
-        post = {
-            'image_url': image_url,
-            'description': description,
-            'user_id': user_id,
-            'mbti': mbti,
-            'avatar_url': avatar_url
-        }
-        posts_collection.insert_one(post)
-        return redirect(url_for('index'))
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+
+            posts_collection = mongo.db.get_collection(POSTS_COLLECTION)
+            if posts_collection is None:
+                logging.error("Posts collection does not exist")
+                return "Posts collection not found", 500
+
+            description = request.form['description']
+            user_id = request.form['user_id']
+            mbti = get_user_mbti(user_id)
+            avatar_url = get_user_avatar(user_id)
+
+            post = {
+                'image_url': filename,  # Save only the filename
+                'description': description,
+                'user_id': user_id,
+                'mbti': mbti,
+                'avatar_url': avatar_url
+            }
+            posts_collection.insert_one(post)
+            return redirect(url_for('index'))
+        else:
+            logging.error("File not allowed")
+            return "File not allowed", 400
     except Exception as e:
         logging.error(f"Error adding post: {e}")
         return "Error adding post", 500
@@ -156,6 +174,10 @@ def search():
     except Exception as e:
         logging.error(f"Error during search: {e}")
         return "Error during search", 500
+
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 if __name__ == '__main__':
     app.run(debug=True)

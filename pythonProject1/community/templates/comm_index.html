@@ -18,8 +18,8 @@
         <button type="submit">Search</button>
     </form>
     <hr>
-    <form action="{{ url_for('add_post') }}" method="post">
-        <input type="text" name="image_url" placeholder="Image URL" required>
+    <form action="{{ url_for('add_post') }}" method="post" enctype="multipart/form-data">
+        <input type="file" name="image_file" required>
         <input type="text" name="description" placeholder="Description" required>
         <input type="text" name="user_id" placeholder="User ID" required>
         <button type="submit">Add Post</button>
@@ -40,17 +40,25 @@
             </form>
             <div>
                 <h4>Comments:</h4>
-                <div id="comments-{{ post._id }}">
-                    {% for comment in post.comments %}
-                        <div>
-                            <img src="{{ comment.avatar_url }}" alt="User Avatar" class="avatar">
-                            <p>{{ comment.comment }}</p>
-                            <p><strong>Commented by User:</strong> {{ comment.user_id }}</p>
-                            <p><strong>MBTI:</strong> {{ comment.mbti }}</p>
-                        </div>
-                    {% endfor %}
-                </div>
+                <div id="comments-{{ post._id }}"></div>
             </div>
+            <script>
+                fetch('{{ url_for("get_comments", post_id=post._id) }}')
+                    .then(response => response.json())
+                    .then(comments => {
+                        const commentsContainer = document.getElementById('comments-{{ post._id }}');
+                        comments.forEach(comment => {
+                            const commentDiv = document.createElement('div');
+                            commentDiv.innerHTML = `
+                                <img src="${comment.avatar_url}" alt="User Avatar" class="avatar">
+                                <p>${comment.comment}</p>
+                                <p><strong>Commented by User:</strong> ${comment.user_id}</p>
+                                <p><strong>MBTI:</strong> ${comment.mbti}</p>
+                            `;
+                            commentsContainer.appendChild(commentDiv);
+                        });
+                    });
+            </script>
         </div>
         <hr>
     {% endfor %}
