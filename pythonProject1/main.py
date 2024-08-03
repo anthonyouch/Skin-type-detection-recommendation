@@ -263,7 +263,6 @@ def allowed_file(filename):
 
 @app.route('/add_post', methods=['GET', 'POST'])
 def add_post():
-    print(request)
     if request.method == 'POST':
         try:
             if 'image_file' not in request.files:
@@ -363,9 +362,21 @@ def search():
             post_comments = list(comments_collection.find({'post_id': post['_id']}))
             post['comments'] = post_comments
             post['timestamp'] = post.get('timestamp', datetime.now())
-            posts_list.append(post)
 
-        return render_template('display_posts.html', posts=posts_list, keyword=keyword)
+            post_return = {
+                "user_id": post['user_id'],
+                'create_time': str(post['timestamp']),
+                'post': {
+                    "content": post['description']
+                },
+                "skin_tag": post['mbti']
+            }
+            posts_list.append(post_return)
+
+        return {
+        'statusCode': 200,
+        'body': json.dumps(posts_list)
+        }
     except Exception as e:
         logging.error(f"Error during search: {e}")
         return "Error during search", 500
@@ -379,7 +390,6 @@ def search():
 
 @app.route('/display_posts', methods=['GET', 'POST'])
 def display_posts():
-    print("get request!")
     try:
         keyword = request.args.get('keyword', '')
         if keyword:
@@ -404,7 +414,6 @@ def display_posts():
             }
             posts_list.append(post_return)
 
-        print(posts_list)
         return {
         'statusCode': 200,
         'body': json.dumps(posts_list)
